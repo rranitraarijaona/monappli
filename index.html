@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GeCo SRSP</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ CONNEXION ============ -->
+<div id="login">
+  <div class="login-cadre">
+    <div class="login-boite" id="login-boite">
+      <div class="login-icone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m3 7 9 6.5L21 7"/></svg>
+      </div>
+      <h1 class="logo"><span class="c1">Ge</span><span class="c2">Co</span> <span class="c3">SRSP</span></h1>
+      <p class="sous-titre">Gestion du courrier</p>
+
+      <label for="l-mdp" style="text-align:left">Mot de passe</label>
+      <div class="champ-mdp">
+        <input type="password" id="l-mdp" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')seConnecter()">
+        <button type="button" class="oeil" onclick="voirMdp()" title="Afficher / masquer" aria-label="Afficher ou masquer le mot de passe">👁</button>
+      </div>
+      <div class="erreur" id="l-erreur"></div>
+      <button class="b entrer" id="l-btn" onclick="seConnecter()">ENTRER</button>
+      <div class="etat" id="l-etat"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MENU PRINCIPAL ============ -->
+<aside id="ruban">
+  <div class="marque">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m3 7 9 6.5L21 7"/></svg>
+    <div class="bienvenue">BIENVENUE</div>
+    <h1 class="logo"><span class="c1">Ge</span><span class="c2">Co</span> <span class="c3">SRSP</span></h1>
+  </div>
+  <button id="btn-liste" class="actif" onclick="voirListe(null)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Listes</button>
+  <button id="btn-form" onclick="nouveau()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Nouvel enregistrement</button>
+  <div id="btn-divisions"></div>
+  <div class="badge-mode" id="badge-mode"></div>
+  <button class="quitter" onclick="quitter()">QUITTER</button>
+</aside>
+
+<div id="contenu">
+
+  <!-- ============ LISTES ============ -->
+  <section id="vue-liste" class="vue active">
+    <h3 id="titre-liste"></h3>
+    <div class="stats" id="stats"></div>
+
+    <div class="carte">
+      <label>Recherche</label>
+      <input type="text" id="recherche" placeholder="Tapez un IM, un nom, un N° d'arrivée, une demande, une division..." oninput="afficherListe()">
+      <div class="actions">
+        <button class="b danger" id="btn-suppr-sel" onclick="supprimerSelection()" disabled>Supprimer la sélection (0)</button>
+        <button class="b sec" onclick="sauvegarder()" title="Enregistre toutes les données dans un fichier sur cet ordinateur">💾 Sauvegarder</button>
+        <button class="b sec" onclick="document.getElementById('fichier-restauration').click()" title="Recharge les données depuis un fichier de sauvegarde">📂 Restaurer</button>
+        <input type="file" id="fichier-restauration" accept=".json,application/json" hidden onchange="restaurer(this.files[0])">
+        <button class="b sec" onclick="pdfSelection()" title="Enregistre les bordereaux cochés en fichier PDF">📄 PDF de la sélection</button>
+        <span class="info-sauv" id="info-sauvegarde"></span>
+      </div>
+    </div>
+
+    <div class="defile">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="tout-sel" title="Tout sélectionner" onchange="toutSelectionner(this.checked)"></th>
+          <th>Date arrivée</th>
+          <th>N° Arrivée</th>
+          <th>N° BE EXP</th>
+          <th>IM</th>
+          <th>AGENTS (Nom)</th>
+          <th>Demande</th>
+          <th>Division</th>
+          <th>Paraphé</th>
+          <th>Resp Paraphe</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="corps"></tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- ============ NOUVEL ENREGISTREMENT ============ -->
+  <section id="vue-form" class="vue">
+    <div class="carte">
+      <h3 id="titre-form">Nouvel enregistrement</h3>
+
+      <!-- Le Bordereau d'Envoi (BE) -->
+      <div class="ligne">
+        <div><label>Date d'arrivée</label><input type="date" id="f-da"></div>
+        <div><label>N° Arrivée</label><input type="text" id="f-na" inputmode="numeric" maxlength="4" title="Tapez un numéro : les suivants se numérotent automatiquement"></div>
+        <div><label>N° BE EXP</label><input type="text" id="f-be"></div>
+      </div>
+
+      <!-- Sous-formulaire : une demande -->
+      <div class="sous">
+        <h3>Ajouter une demande au bordereau</h3>
+
+        <div class="ligne">
+          <div class="auto-box">
+            <label>Demande</label>
+            <input type="text" id="f-demande" autocomplete="off" placeholder="Tapez quelques lettres..." oninput="proposer()" onfocus="proposer()" onblur="cacherSuggestions()">
+            <div id="suggestions"></div>
+          </div>
+        </div>
+        <div id="info-agent" class="info"></div>
+
+        <div class="ligne">
+          <div><label>Nom</label><input type="text" id="a-nom"></div>
+          <div><label>IM</label><input type="text" id="a-im" onkeydown="if(event.key==='Enter')ajouterAgent()"></div>
+          <div class="auto"><button class="b" onclick="ajouterAgent()">+ Ajouter</button></div>
+        </div>
+
+        <table>
+          <thead><tr><th>Nom</th><th>IM</th><th style="width:50px"></th></tr></thead>
+          <tbody id="corps-agents"></tbody>
+        </table>
+
+        <div class="actions">
+          <button class="b ok" onclick="ajouterDemande()">Valider la demande</button>
+        </div>
+      </div>
+
+      <!-- Demandes déjà ajoutées au bordereau -->
+      <label>Demandes de ce bordereau</label>
+      <table>
+        <thead><tr><th>Demande</th><th>Agents (Nom — IM)</th><th style="width:130px"></th></tr></thead>
+        <tbody id="corps-demandes"></tbody>
+      </table>
+
+      <!-- Division : une seule par bordereau -->
+      <div class="ligne" style="margin-top:14px">
+        <div>
+          <label>Division</label>
+          <select id="f-division"></select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="b ok" onclick="enregistrer()">ENREGISTRER</button>
+        <button class="b" onclick="chargerPourModifier()">MODIFIER</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BORDEREAU IMPRIMABLE ============ -->
+  <section id="vue-bordereau" class="vue">
+    <div class="barre no-print">
+      <button class="b ok" onclick="window.print()">🖨 Imprimer</button>
+      <button class="b sec" onclick="afficher('liste')">← Retour</button>
+      <button class="b" onclick="pdfDuBordereau()">📄 Télécharger en PDF</button>
+      <span class="info-sauv">Le fichier PDF va dans le dossier Téléchargements</span>
+    </div>
+    <div class="feuille" id="feuille"></div>
+  </section>
+
+</div>
+
+<script src="app.js"></script>
+<script src="pdf.js"></script>
+</body>
+</html>
